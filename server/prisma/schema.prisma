@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id              Int        @id @default(autoincrement())
+  customerCode    String     @unique @map("customer_code")
+  name            String
+  photo           String?
+  mobile          String
+  alternateMobile String?    @map("alternate_mobile")
+  email           String?
+  address         String?
+  city            String?
+  state           String?
+  pincode         String?
+  notes           String?
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  purchases       Purchase[]
+  payments        Payment[]
+
+  @@index([mobile])
+  @@index([customerCode])
+  @@index([name])
+  @@map("customers")
+}
+
+model Product {
+  id          Int        @id @default(autoincrement())
+  name        String
+  description String?
+  price       Float?
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  purchases   Purchase[]
+
+  @@map("products")
+}
+
+model Purchase {
+  id                   Int           @id @default(autoincrement())
+  customerId           Int           @map("customer_id")
+  productId            Int?          @map("product_id")
+  customItemName       String?       @map("custom_item_name")
+  quantity             Int           @default(1)
+  purchaseDate         DateTime      @default(now()) @map("purchase_date")
+  totalAmount          Float         @map("total_amount")
+  downPayment          Float         @default(0) @map("down_payment")
+  outstandingAmount    Float         @map("outstanding_amount")
+  paymentPlan          String        @default("INSTALLMENT") @map("payment_plan")
+  installmentCount     Int           @default(1) @map("installment_count")
+  installmentFrequency String        @default("MONTHLY") @map("installment_frequency")
+  firstDueDate         DateTime      @map("first_due_date")
+  notes                String?
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+
+  customer             Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product              Product?      @relation(fields: [productId], references: [id], onDelete: SetNull)
+  installments         Installment[]
+  payments             Payment[]
+
+  @@index([customerId])
+  @@index([productId])
+  @@map("purchases")
+}
+
+model Installment {
+  id                Int       @id @default(autoincrement())
+  purchaseId        Int       @map("purchase_id")
+  installmentNumber Int       @map("installment_number")
+  dueDate           DateTime  @map("due_date")
+  amount            Float
+  paidAmount        Float     @default(0) @map("paid_amount")
+  remainingAmount   Float     @map("remaining_amount")
+  status            String    @default("PENDING")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  purchase          Purchase  @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  payments          Payment[]
+
+  @@index([purchaseId])
+  @@index([dueDate])
+  @@index([status])
+  @@map("installments")
+}
+
+model Payment {
+  id              Int          @id @default(autoincrement())
+  receiptNumber   String       @unique @map("receipt_number")
+  customerId      Int          @map("customer_id")
+  purchaseId      Int          @map("purchase_id")
+  installmentId   Int?         @map("installment_id")
+  amount          Float
+  paymentDate     DateTime     @default(now()) @map("payment_date")
+  paymentMethod   String       @map("payment_method")
+  referenceNumber String?      @map("reference_number")
+  notes           String?
+  recordedBy      String       @default("Admin") @map("recorded_by")
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  customer        Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  purchase        Purchase     @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  installment     Installment? @relation(fields: [installmentId], references: [id], onDelete: SetNull)
+
+  @@index([customerId])
+  @@index([paymentDate])
+  @@map("payments")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("ADMIN")
+  avatar    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}

@@ -1,0 +1,16 @@
+{
+  "name": "user-management-system",
+  "version": "1.0.0",
+  "description": "Customer & Payment Management ERP/CRM System",
+  "private": true,
+  "scripts": {
+    "server": "npm --prefix server run dev",
+    "client": "npm --prefix client run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "build": "npm --prefix server run build && npm --prefix client run build",
+    "seed": "npm --prefix server run prisma:seed"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
