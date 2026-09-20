@@ -51,9 +51,17 @@ async function login(req, res) {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { email: normalizedEmail }
     });
+
+    // Self-healing: if admin account doesn't exist yet (e.g. in serverless /tmp), seed it immediately
+    if (!user && normalizedEmail === DEFAULT_ADMIN_EMAIL.toLowerCase()) {
+      await seedDefaultAdmin();
+      user = await prisma.user.findUnique({
+        where: { email: normalizedEmail }
+      });
+    }
 
     if (!user) {
       return res.status(401).json({
@@ -98,7 +106,7 @@ async function login(req, res) {
     console.error('Login error:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error during authentication'
+      message: error.message || 'Internal server error during authentication'
     });
   }
 }
@@ -140,10 +148,40 @@ async function getMe(req, res) {
   }
 }
 
+/**
+ * Diagnostic endpoint for serverless deployment verification
+ */
+async function debugAuth(req, res) {
+  try {
+    const userCount = await prisma.user.count();
+    const customerCount = await prisma.customer.count();
+    const adminUser = await prisma.user.findUnique({
+      where: { email: DEFAULT_ADMIN_EMAIL },
+      select: { id: true, name: true, email: true, role: true }
+    });
+
+    res.json({
+      success: true,
+      databaseUrl: process.env.DATABASE_URL || 'not set',
+      isVercel: !!process.env.VERCEL,
+      userCount,
+      customerCount,
+      adminUser
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+}
+
 module.exports = {
   seedDefaultAdmin,
   login,
   getMe,
+  debugAuth,
   DEFAULT_ADMIN_EMAIL,
   DEFAULT_ADMIN_PASS
 };

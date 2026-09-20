@@ -103,7 +103,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+if (require.main === module) {
   app.listen(PORT, async () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     await seedDefaultAdmin();

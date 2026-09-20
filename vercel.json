@@ -1,6 +1,11 @@
 {
   "version": 2,
   "outputDirectory": "dist",
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "server/prisma/**"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/:path*",
